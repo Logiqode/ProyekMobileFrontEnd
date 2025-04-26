@@ -7,6 +7,7 @@ import java.util.UUID
 data class Booking(
     val id: String = UUID.randomUUID().toString(),
     val courtName: String,
+    val courtNumber: String,
     val date: LocalDate,
     val startTime: LocalTime,
     val endTime: LocalTime,

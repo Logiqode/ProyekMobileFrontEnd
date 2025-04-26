@@ -115,7 +115,7 @@ fun TransactionCard(transaction: Transaction) {
 
             // Court information
             Text(
-                text = "Court: ${transaction.booking.courtName}",
+                text = "${transaction.booking.courtName} - Court ${transaction.booking.courtNumber}",
                 color = Color.Gray
             )
 

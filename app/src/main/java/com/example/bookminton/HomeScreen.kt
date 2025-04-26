@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import com.example.bookminton.ui.theme.*
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.style.TextOverflow
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -68,7 +69,7 @@ fun HomeScreen(navController: NavHostController) {
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .weight(2f / 3f)
+                .weight(3f / 4f)
                 .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
                 .background(SoftTeal)
                 .padding(24.dp)
@@ -96,7 +97,8 @@ fun HomeScreen(navController: NavHostController) {
                 val bookingsToShow = bookings.take(3)
                 LazyColumn(
                     modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(bookingsToShow) { booking ->
                         BookingCard(booking = booking)
@@ -145,17 +147,30 @@ fun BookingCard(booking: Booking) {
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = booking.courtName,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = LightBlue
-                )
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    val displayText = if (booking.courtName.length > 18) {
+                        "${booking.courtName.take(18)}... - Court ${booking.courtNumber}"
+                    } else {
+                        "${booking.courtName} - Court ${booking.courtNumber}"
+                    }
+
+                    Text(
+                        text = displayText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = LightBlue,
+                        maxLines = 1,
+                        overflow = TextOverflow.Clip
+                    )
+                }
                 Text(
                     text = "$${booking.price}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = LightBlue
+                    color = LightBlue,
+                    modifier = Modifier.padding(start = 8.dp)
                 )
             }
 
