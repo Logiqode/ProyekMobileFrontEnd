@@ -16,6 +16,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.bookminton.navigation.Screen
 import com.example.bookminton.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -23,9 +24,9 @@ import com.example.bookminton.ui.theme.*
 fun BookingScreen(navController: NavHostController) {
     var searchQuery by remember { mutableStateOf("") }
     val courts = listOf(
-        Court("Eagles Badminton Court", "123 Sport Ave, City"),
-        Court("Falcons Badminton Arena", "456 Game St, Town"),
-        Court("Hawks Sports Center", "789 Match Blvd, Village")
+        Court("Eagles Badminton Court", "123 Sport Ave, City", "1"),
+        Court("Falcons Badminton Arena", "456 Game St, Town", "2"),
+        Court("Hawks Sports Center", "789 Match Blvd, Village", "3")
     )
 
     val filteredCourts = courts.filter {
@@ -93,12 +94,21 @@ fun BookingScreen(navController: NavHostController) {
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(filteredCourts) { court ->
-                    CourtCard(court = court) {
-                        // Will implement booking logic in next step
-                    }
+                    CourtCard(
+                        court = court,
+                        onBookClick = {
+                            navController.navigate(
+                                Screen.BookingForm.createRoute(
+                                    court.name,
+                                    court.address
+                                )
+                            )
+                        }
+                    )
                 }
             }
         }
@@ -109,12 +119,8 @@ fun BookingScreen(navController: NavHostController) {
 fun CourtCard(court: Court, onBookClick: () -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(
-            containerColor = Color.White
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 4.dp
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(
@@ -148,7 +154,9 @@ fun CourtCard(court: Court, onBookClick: () -> Unit) {
     }
 }
 
+// Update your Court data class to include courtNumber
 data class Court(
     val name: String,
-    val address: String
+    val address: String,
+    val courtNumber: String
 )

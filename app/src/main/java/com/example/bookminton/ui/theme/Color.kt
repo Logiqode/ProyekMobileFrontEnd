@@ -16,3 +16,4 @@ val SoftTeal = Color(0xFFBDDDE4)
 val Cream = Color(0xFFFFF1D5)
 
 val statusGreen = Color(0xFF008000)
+val statusRed = Color(0xFF800517)
