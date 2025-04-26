@@ -1,4 +1,4 @@
-package com.example.bookminton
+package com.example.bookminton.pages
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -16,6 +16,8 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.bookminton.ui.theme.*
 import androidx.compose.ui.Alignment
+import com.example.bookminton.dataModel.Transaction
+import com.example.bookminton.sampleData.SampleData
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

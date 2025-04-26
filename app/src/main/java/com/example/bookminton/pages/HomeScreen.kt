@@ -1,4 +1,4 @@
-package com.example.bookminton
+package com.example.bookminton.pages
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -20,6 +20,8 @@ import androidx.navigation.NavHostController
 import com.example.bookminton.ui.theme.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
+import com.example.bookminton.dataModel.Booking
+import com.example.bookminton.sampleData.SampleData
 
 @Composable
 fun HomeScreen(navController: NavHostController) {

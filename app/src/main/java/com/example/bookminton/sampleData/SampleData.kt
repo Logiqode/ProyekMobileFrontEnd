@@ -1,5 +1,7 @@
-package com.example.bookminton
+package com.example.bookminton.sampleData
 
+import com.example.bookminton.dataModel.Booking
+import com.example.bookminton.dataModel.Transaction
 import java.time.LocalDate
 import java.time.LocalTime
 
