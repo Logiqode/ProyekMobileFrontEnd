@@ -24,7 +24,7 @@ fun BottomNavigationBar(navController: NavController) {
     )
 
     NavigationBar(
-        containerColor = LightBlue // Using your color scheme
+        containerColor = LightBlue
     ) {
         val navBackStackEntry = navController.currentBackStackEntryAsState()
         val currentRoute = navBackStackEntry.value?.destination?.route
@@ -32,22 +32,15 @@ fun BottomNavigationBar(navController: NavController) {
         items.forEach { screen ->
             NavigationBarItem(
                 icon = {
-                    when (screen) {
-                        is Screen.Home -> Icon(
-                            Icons.Default.Home,
-                            contentDescription = "Home"
-                        )
-                        is Screen.Transactions -> Icon(
-                            Icons.Default.Email,
-                            contentDescription = "Transactions"
-                        )
-                    }
+                    Icon(
+                        imageVector = screen.icon,
+                        contentDescription = screen.label
+                    )
                 },
-                label = { Text(screen.route.capitalize()) },
+                label = { Text(screen.label) },
                 selected = currentRoute == screen.route,
                 onClick = {
                     navController.navigate(screen.route) {
-                        // Avoid multiple copies of the same destination
                         popUpTo(navController.graph.startDestinationId)
                         launchSingleTop = true
                     }
@@ -57,7 +50,7 @@ fun BottomNavigationBar(navController: NavController) {
                     selectedTextColor = Color.White,
                     unselectedIconColor = Color.White.copy(alpha = 0.6f),
                     unselectedTextColor = Color.White.copy(alpha = 0.6f),
-                    indicatorColor = SkyBlue // Using your color scheme
+                    indicatorColor = SkyBlue
                 )
             )
         }

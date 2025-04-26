@@ -69,7 +69,7 @@ fun TransactionsScreen(navController: NavHostController) {
                 LazyColumn(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                        .padding(horizontal = 16.dp, vertical = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp) // Increased spacing
                 ) {
                     items(transactions) { transaction ->
@@ -84,14 +84,16 @@ fun TransactionsScreen(navController: NavHostController) {
 @Composable
 fun TransactionCard(transaction: Transaction) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = 8.dp),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp
         ),
-        shape = RoundedCornerShape(16.dp)
+        shape = RoundedCornerShape(16.dp),
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -109,7 +111,7 @@ fun TransactionCard(transaction: Transaction) {
                 )
                 Text(
                     text = transaction.status,
-                    color = statusGreen // Gray for consistency
+                    color = statusGreen
                 )
             }
 

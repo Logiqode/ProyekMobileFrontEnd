@@ -111,7 +111,7 @@ fun HomeScreen(navController: NavHostController) {
             Spacer(modifier = Modifier.weight(1f))
 
             Button(
-                onClick = { navController.navigate("transactions") },
+                onClick = { navController.navigate("booking") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -122,7 +122,7 @@ fun HomeScreen(navController: NavHostController) {
                 shape = RoundedCornerShape(12.dp)
             ) {
                 Text(
-                    text = "View Transactions",
+                    text = "Book Now",
                     fontSize = 18.sp
                 )
             }
