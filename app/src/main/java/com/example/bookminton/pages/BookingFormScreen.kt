@@ -131,19 +131,38 @@ fun BookingFormScreen(
                             .padding(horizontal = 24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        // Toast notification
+                        // Replace your current toast notification code with this:
                         if (showToast.value) {
+                            var countdown by remember { mutableStateOf(3) }
+
+                            // Countdown effect
+                            LaunchedEffect(showToast.value) {
+                                while (countdown > 0) {
+                                    toastMessage.value = "Booking successful! Redirecting in $countdown..."
+                                    delay(1000) // Wait 1 second
+                                    countdown--
+                                }
+                                showToast.value = false
+                                if (isSuccess.value) {
+                                    navController.navigate(Screen.Transactions.route) {
+                                        popUpTo(Screen.Home.route)
+                                    }
+                                }
+                            }
+
+                            // Toast UI
                             Box(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .background(if (isSuccess.value) statusGreen else statusRed)
-                                    .padding(8.dp),
+                                    .padding(12.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = toastMessage.value,
                                     color = Color.White,
-                                    fontWeight = FontWeight.Bold
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 16.sp
                                 )
                             }
                             Spacer(modifier = Modifier.height(8.dp))
