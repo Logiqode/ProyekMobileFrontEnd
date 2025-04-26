@@ -1,4 +1,4 @@
-package com.example.bookminton.dataModel
+package com.example.bookminton.data
 
 import java.time.LocalDate
 import java.time.LocalTime

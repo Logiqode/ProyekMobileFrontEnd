@@ -20,19 +20,20 @@ import androidx.navigation.NavHostController
 import com.example.bookminton.ui.theme.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
-import com.example.bookminton.dataModel.Booking
+import com.example.bookminton.data.Booking
+import com.example.bookminton.data.DataSingleton
+import com.example.bookminton.navigation.Screen
 import com.example.bookminton.sampleData.SampleData
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
-    var bookings by remember { mutableStateOf(SampleData.sampleBookings) }
+    val bookings by remember { mutableStateOf(DataSingleton.bookings) }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
             .background(SkyBlue)
     ) {
-        // Top section (1/3 of screen)
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -67,7 +68,7 @@ fun HomeScreen(navController: NavHostController) {
             }
         }
 
-        // Bottom section (2/3 of screen)
+        // Bottom section (3/4 of screen)
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -78,7 +79,9 @@ fun HomeScreen(navController: NavHostController) {
         ) {
             if (bookings.isEmpty()) {
                 Box(
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -96,22 +99,20 @@ fun HomeScreen(navController: NavHostController) {
                     modifier = Modifier.padding(bottom = 16.dp)
                 )
 
-                val bookingsToShow = bookings.take(3)
                 LazyColumn(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(16.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(bookingsToShow) { booking ->
+                    items(bookings.take(3)) { booking ->
                         BookingCard(booking = booking)
                     }
                 }
             }
 
-            Spacer(modifier = Modifier.weight(1f))
-
+            // This ensures the button stays at the bottom
+            Spacer(modifier = Modifier.height(16.dp))
             Button(
-                onClick = { navController.navigate("booking") },
+                onClick = { navController.navigate(Screen.Booking.route) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),

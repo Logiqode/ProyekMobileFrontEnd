@@ -26,6 +26,11 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import com.example.bookminton.data.Booking
+import com.example.bookminton.navigation.Screen
+import kotlinx.coroutines.delay
+import java.time.format.DateTimeFormatter
+import com.example.bookminton.data.DataSingleton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -42,23 +47,23 @@ fun BookingFormScreen(
     val toastMessage = remember { mutableStateOf("") }
     val isSuccess = remember { mutableStateOf(true) }
     val context = LocalContext.current
+    var courtNumberError by remember { mutableStateOf(false) }
 
     // Time options
     val timeOptions = remember {
-        (8..22).flatMap { hour ->
-            listOf(
-                LocalTime.of(hour, 0),
-                LocalTime.of(hour, 30)
-            )
+        (8..22).map { hour ->
+            LocalTime.of(hour, 0)
         }
     }
 
     if (showToast.value) {
         LaunchedEffect(Unit) {
-            kotlinx.coroutines.delay(3500)
+            delay(3500)
             showToast.value = false
-            navController.navigate("transactions") {
-                popUpTo("home")
+            if (isSuccess.value) {
+                navController.navigate(Screen.Transactions.route) {
+                    popUpTo(Screen.Home.route)
+                }
             }
         }
     }
@@ -146,13 +151,22 @@ fun BookingFormScreen(
                 // Court Number Input
                 OutlinedTextField(
                     value = courtNumber,
-                    onValueChange = { courtNumber = it },
+                    onValueChange = {
+                        courtNumber = it
+                        courtNumberError = it.isBlank()
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("Court Number") },
+                    isError = courtNumberError,
+                    supportingText = {
+                        if (courtNumberError) {
+                            Text("Court number is required", color = Color.Red)
+                        }
+                    },
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = LightBlue,
-                        unfocusedBorderColor = Color.Gray
+                        unfocusedBorderColor = if (courtNumberError) Color.Red else Color.Gray
                     )
                 )
 
@@ -257,9 +271,27 @@ fun BookingFormScreen(
                 // Confirm Button
                 Button(
                     onClick = {
-                        toastMessage.value = "Booking successful. You will be redirected to the Transactions page in 3 seconds."
-                        isSuccess.value = true
-                        showToast.value = true
+                        if (courtNumber.isBlank()) {
+                            courtNumberError = true
+                            toastMessage.value = "Please fill in court number"
+                            isSuccess.value = false
+                            showToast.value = true
+                        } else {
+                            val booking = Booking(
+                                courtName = courtName,
+                                courtNumber = courtNumber,
+                                date = selectedDate,
+                                startTime = startTime,
+                                endTime = endTime,
+                                price = 30.0
+                            )
+
+                            DataSingleton.addBooking(booking)
+
+                            toastMessage.value = "Booking successful. You will be redirected to the Transactions page in 3 seconds."
+                            isSuccess.value = true
+                            showToast.value = true
+                        }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -318,7 +350,7 @@ fun TimeDropdown(
         ) {
             timeOptions.forEach { time ->
                 DropdownMenuItem(
-                    text = { Text(time.toString()) },
+                    text = { Text(time.format(DateTimeFormatter.ofPattern("HH:mm"))) },
                     onClick = {
                         onTimeSelected(time)
                         expanded = false

@@ -16,24 +16,17 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.bookminton.ui.theme.*
 import androidx.compose.ui.Alignment
-import com.example.bookminton.dataModel.Transaction
+import com.example.bookminton.data.Transaction
 import com.example.bookminton.sampleData.SampleData
+import com.example.bookminton.data.DataSingleton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsScreen(navController: NavHostController) {
-    var transactions by remember { mutableStateOf(SampleData.sampleTransactions) }
+    val transactions = remember { DataSingleton.transactions }
 
-    // Main container with SoftTeal background
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(SoftTeal)
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize()
-        ) {
-            // Top app bar with LightBlue background
+    Scaffold(
+        topBar = {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
@@ -53,28 +46,30 @@ fun TransactionsScreen(navController: NavHostController) {
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = LightBlue
-                ),
-                modifier = Modifier.statusBarsPadding()
+                )
             )
-
-            // Content area
-            if (transactions.isEmpty()) {
-                Box(
-                    modifier = Modifier.fillMaxSize(),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text("No transactions found")
-                }
-            } else {
-                LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 16.dp, vertical = 16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp) // Increased spacing
-                ) {
-                    items(transactions) { transaction ->
-                        TransactionCard(transaction = transaction)
-                    }
+        }
+    ) { padding ->
+        if (transactions.isEmpty()) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("No transactions found")
+            }
+        } else {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                contentPadding = PaddingValues(bottom = 16.dp)
+            ) {
+                items(transactions) { transaction ->
+                    TransactionCard(transaction = transaction)
                 }
             }
         }
