@@ -65,6 +65,7 @@ fun BookingFormScreen(
     val isSuccess = remember { mutableStateOf(false) }
     var countdown by remember { mutableIntStateOf(0) }
     val focusManager = LocalFocusManager.current
+    var showConfirmationDialog by remember { mutableStateOf(false) }
 
     // Derived values
     val existingBookings = remember(selectedDate, courtId) {
@@ -163,7 +164,7 @@ fun BookingFormScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(top = padding.calculateTopPadding())
+                .padding(top = 8.dp)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -447,7 +448,7 @@ fun BookingFormScreen(
                 // Confirm Button
                 Button(
                     onClick = {
-                        // Validate all required fields
+                        // Validate all required fields first
                         dateError = selectedDate == null
                         val timeError = startTime == LocalTime.MIN || endTime == LocalTime.MIN
 
@@ -458,58 +459,8 @@ fun BookingFormScreen(
                             return@Button
                         }
 
-                        // Final availability check with all parameters
-                        if (!BookingFormHelper.isTimeRangeAvailable(
-                                start = startTime,
-                                end = endTime,
-                                courtStatus = court.status,
-                                venueHours = venue.openHours,
-                                existingBookings = existingBookings,
-                                selectedDate = selectedDate
-                            )) {
-                            toastMessage.value = "This time slot is no longer available. Please select another time."
-                            isSuccess.value = false
-                            showToast.value = true
-                            return@Button
-                        }
-
-                        // Check minimum booking duration (e.g., 1 hour)
-                        if (ChronoUnit.HOURS.between(startTime, endTime) < 1) {
-                            toastMessage.value = "Minimum booking duration is 1 hour"
-                            isSuccess.value = false
-                            showToast.value = true
-                            return@Button
-                        }
-
-                        if (BookingFormHelper.isSameDayBooking(selectedDate)) {
-                            val currentTime = LocalTime.now()
-                            val bufferTime = currentTime.plusHours(1)
-                            val nextFullHour = if (bufferTime.minute > 0) {
-                                bufferTime.withMinute(0).plusHours(1)
-                            } else {
-                                bufferTime.withMinute(0)
-                            }
-
-                            if (startTime < nextFullHour) {
-                                toastMessage.value = "Same-day bookings must be at least one hour ahead. Earliest available: $nextFullHour"
-                                isSuccess.value = false
-                                showToast.value = true
-                                return@Button
-                            }
-                        }
-
-                        // All checks passed - create booking
-                        DataSingleton.createBooking(
-                            venueId = venueId,
-                            courtId = courtId,
-                            sport = selectedSport!!,
-                            date = selectedDate!!,
-                            startTime = startTime,
-                            endTime = endTime
-                        )
-
-                        isSuccess.value = true
-                        showToast.value = true
+                        // Show confirmation dialog instead of directly creating booking
+                        showConfirmationDialog = true
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -528,6 +479,90 @@ fun BookingFormScreen(
                     Text("Confirm Booking", fontSize = 18.sp)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
+            }
+            if (showConfirmationDialog) {
+                AlertDialog(
+                    onDismissRequest = { showConfirmationDialog = false },
+                    title = {
+                        Text(
+                            "Confirm Booking",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold
+                        )
+                    },
+                    text = {
+                        Column {
+                            Text("Venue: ${venue.name}", style = MaterialTheme.typography.bodyMedium)
+                            Text("Court: ${court.courtNumber}", style = MaterialTheme.typography.bodyMedium)
+                            Text("Sport: ${selectedSport?.name}", style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Date: ${selectedDate?.format(DateTimeFormatter.ofPattern("EEE, MMM d yyyy"))}",
+                                style = MaterialTheme.typography.bodyMedium)
+                            Text("Time: ${startTime.format(DateTimeFormatter.ofPattern("HH:mm"))} - ${endTime.format(DateTimeFormatter.ofPattern("HH:mm"))}",
+                                style = MaterialTheme.typography.bodyMedium)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text("Duration: ${ChronoUnit.HOURS.between(startTime, endTime)} hours",
+                                style = MaterialTheme.typography.bodyMedium)
+                            Text("Total Price: Rp ${price.toInt()}",
+                                style = MaterialTheme.typography.bodyMedium.copy(
+                                    fontWeight = FontWeight.Bold,
+                                    color = TealBlack
+                                ))
+                        }
+                    },
+                    confirmButton = {
+                        Button(
+                            onClick = {
+                                showConfirmationDialog = false
+                                // Final availability check
+                                if (!BookingFormHelper.isTimeRangeAvailable(
+                                        start = startTime,
+                                        end = endTime,
+                                        courtStatus = court.status,
+                                        venueHours = venue.openHours,
+                                        existingBookings = existingBookings,
+                                        selectedDate = selectedDate
+                                    )) {
+                                    toastMessage.value = "This time slot is no longer available. Please select another time."
+                                    isSuccess.value = false
+                                    showToast.value = true
+                                    return@Button
+                                }
+
+                                // Create booking
+                                DataSingleton.createBooking(
+                                    venueId = venueId,
+                                    courtId = courtId,
+                                    sport = selectedSport!!,
+                                    date = selectedDate!!,
+                                    startTime = startTime,
+                                    endTime = endTime
+                                )
+
+                                isSuccess.value = true
+                                showToast.value = true
+                            },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = TealBlack,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text("Confirm")
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(
+                            onClick = { showConfirmationDialog = false },
+                            colors = ButtonDefaults.textButtonColors(
+                                contentColor = Color.Gray
+                            )
+                        ) {
+                            Text("Cancel")
+                        }
+                    },
+                    shape = RoundedCornerShape(16.dp),
+                    containerColor = Color.White
+                )
             }
         }
     }

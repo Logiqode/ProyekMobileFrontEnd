@@ -165,11 +165,6 @@ fun BookingScreen(navController: NavHostController) {
 }
 
 @Composable
-fun KeyboardActions(onDone: () -> Unit) {
-    TODO("Not yet implemented")
-}
-
-@Composable
 fun VenueCard(venue: Venue, onBookClick: (Court) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
