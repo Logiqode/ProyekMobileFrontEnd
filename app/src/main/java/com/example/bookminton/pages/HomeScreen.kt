@@ -1,6 +1,7 @@
 package com.example.bookminton.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -21,9 +22,11 @@ import com.example.bookminton.ui.theme.*
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import com.example.bookminton.data.Booking
+import com.example.bookminton.data.BookingStatus
 import com.example.bookminton.data.DataSingleton
 import com.example.bookminton.navigation.Screen
 import com.example.bookminton.sampleData.SampleData
+import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
@@ -132,11 +135,16 @@ fun HomeScreen(navController: NavHostController) {
 }
 
 @Composable
-fun BookingCard(booking: Booking) {
+fun BookingCard(
+    booking: Booking,
+    onCardClick: (() -> Unit)? = null // Optional click handler
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(enabled = onCardClick != null) { onCardClick?.invoke()},
         colors = CardDefaults.cardColors(
-            containerColor = Color.White
+            containerColor = MaterialTheme.colorScheme.surfaceContainer
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp
@@ -146,39 +154,48 @@ fun BookingCard(booking: Booking) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Header Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Column(
-                    modifier = Modifier.weight(1f)
-                ) {
-                    val displayText = if (booking.courtName.length > 18) {
-                        "${booking.courtName.take(18)}... - Court ${booking.courtNumber}"
-                    } else {
-                        "${booking.courtName} - Court ${booking.courtNumber}"
-                    }
-
-                    Text(
-                        text = displayText,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = LightBlue,
-                        maxLines = 1,
-                        overflow = TextOverflow.Clip
-                    )
-                }
                 Text(
-                    text = "$${booking.price}",
+                    text = "${booking.venueName} - ${booking.courtNumber}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = LightBlue,
-                    modifier = Modifier.padding(start = 8.dp)
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f)
                 )
+
+                // Status Badge
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(
+                            when (booking.status) {
+                                BookingStatus.UPCOMING -> Color(0xFF2196F3).copy(alpha = 0.2f)
+                                BookingStatus.COMPLETED -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                            }
+                        )
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                ) {
+                    Text(
+                        text = booking.status.name.lowercase().replaceFirstChar { it.titlecase() },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = when (booking.status) {
+                            BookingStatus.UPCOMING -> Color(0xFF2196F3)
+                            BookingStatus.COMPLETED -> Color(0xFF4CAF50)
+                        }
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
+            // Details Row
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -187,18 +204,36 @@ fun BookingCard(booking: Booking) {
                     Text(
                         text = "Date",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(text = booking.date.toString())
+                    Text(
+                        text = booking.date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
+
                 Column {
                     Text(
                         text = "Time",
                         style = MaterialTheme.typography.labelSmall,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Text(text = "${booking.startTime} - ${booking.endTime}")
+                    Text(
+                        text = "${booking.startTime.format(DateTimeFormatter.ofPattern("hh:mm a"))} - " +
+                                "${booking.endTime.format(DateTimeFormatter.ofPattern("hh:mm a"))}",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
                 }
+            }
+
+            // Transaction reference (if needed)
+            if (onCardClick != null) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Booking ID: ${booking.bookingId.take(8)}...",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }

@@ -106,7 +106,7 @@ object SampleData {
                     sports = listOf(SportPricing(basketball, 90000.0))
                 )
             ),
-            openHours = LocalTime.of(8, 0) to LocalTime.of(24, 0)
+            openHours = LocalTime.of(8, 0) to LocalTime.of(0, 0)
         )
     )
 }

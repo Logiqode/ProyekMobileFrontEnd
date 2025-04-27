@@ -1,10 +1,14 @@
 package com.example.bookminton.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Search
@@ -13,25 +17,36 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
+import com.example.bookminton.data.DataSingleton
 import com.example.bookminton.navigation.Screen
 import com.example.bookminton.ui.theme.*
+import com.example.bookminton.data.Court
+import com.example.bookminton.data.Venue
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material3.Icon
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BookingScreen(navController: NavHostController) {
     var searchQuery by remember { mutableStateOf("") }
-    val courts = listOf(
-        Court("Eagles Badminton Court", "123 Sport Ave, City", "1"),
-        Court("Falcons Badminton Arena", "456 Game St, Town", "2"),
-        Court("Hawks Sports Center", "789 Match Blvd, Village", "3")
-    )
+    val venues = remember { DataSingleton.venues }
+    val focusManager = LocalFocusManager.current
 
-    val filteredCourts = courts.filter {
-        it.name.contains(searchQuery, ignoreCase = true) ||
-                it.address.contains(searchQuery, ignoreCase = true)
+    val filteredVenues = venues.filter { venue ->
+        venue.name.contains(searchQuery, ignoreCase = true) ||
+                venue.address.contains(searchQuery, ignoreCase = true) ||
+                venue.courts.any { court ->
+                    court.courtNumber.contains(searchQuery, ignoreCase = true)
+                }
     }
 
     Scaffold(
@@ -39,7 +54,7 @@ fun BookingScreen(navController: NavHostController) {
             CenterAlignedTopAppBar(
                 title = {
                     Text(
-                        "Book",
+                        "Book Court",
                         color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
@@ -59,56 +74,84 @@ fun BookingScreen(navController: NavHostController) {
             )
         }
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(padding)
                 .background(SoftTeal)
+                .clickable(
+                    interactionSource = remember { MutableInteractionSource() },
+                    indication = null
+                ) {
+                    // This will clear focus and close keyboard when clicking anywhere
+                    focusManager.clearFocus()
+                }
         ) {
-            // Search Bar
-            TextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(16.dp),
-                placeholder = { Text("Search courts...") },
-                leadingIcon = {
-                    Icon(
-                        Icons.Default.Search,
-                        contentDescription = "Search"
-                    )
-                },
-                shape = RoundedCornerShape(16.dp),
-                colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    disabledContainerColor = Color.White,
-                    focusedIndicatorColor = Color.Transparent,
-                    unfocusedIndicatorColor = Color.Transparent
-                )
-            )
-
-            // Courts List
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
+                    .fillMaxSize()
+                    .padding(padding)
             ) {
-                items(filteredCourts) { court ->
-                    CourtCard(
-                        court = court,
-                        onBookClick = {
-                            navController.navigate(
-                                Screen.BookingForm.createRoute(
-                                    court.name,
-                                    court.address
-                                )
+                // Search Bar
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp)
+                        .clickable { /* Empty to prevent event bubbling */ }
+                ) {
+                    TextField(
+                        value = searchQuery,
+                        onValueChange = { searchQuery = it },
+                        modifier = Modifier.fillMaxWidth(),
+                        placeholder = { Text("Search venues or courts...") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.Search,
+                                contentDescription = "Search"
                             )
-                        }
+                        },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.White,
+                            unfocusedContainerColor = Color.White,
+                            disabledContainerColor = Color.White,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent
+                        ),
+                        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                        keyboardActions = KeyboardActions(
+                            onDone = {
+                                focusManager.clearFocus()
+                            }
+                        )
                     )
+                }
+
+                // Venues List
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .pointerInput(Unit){
+                            detectTapGestures(onTap = {
+                                focusManager.clearFocus()
+                            })
+                        },
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp)
+                ) {
+                    items(filteredVenues) { venue ->
+                        VenueCard(
+                            venue = venue,
+                            onBookClick = { court ->
+                                navController.navigate(
+                                    Screen.BookingForm.createRoute(
+                                        venue.venueId,
+                                        court.courtId
+                                    )
+                                )
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -116,7 +159,12 @@ fun BookingScreen(navController: NavHostController) {
 }
 
 @Composable
-fun CourtCard(court: Court, onBookClick: () -> Unit) {
+fun KeyboardActions(onDone: () -> Unit) {
+    TODO("Not yet implemented")
+}
+
+@Composable
+fun VenueCard(venue: Venue, onBookClick: (Court) -> Unit) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -126,37 +174,84 @@ fun CourtCard(court: Court, onBookClick: () -> Unit) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
+            // Venue Header
             Text(
-                text = court.name,
+                text = venue.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = LightBlue
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
-                text = court.address,
+                text = venue.address,
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
+
             Spacer(modifier = Modifier.height(16.dp))
-            Button(
-                onClick = onBookClick,
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = LightBlue,
-                    contentColor = Color.White
-                ),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text("Select Court")
+
+            // Available Courts
+            Text(
+                text = "Available Courts:",
+                style = MaterialTheme.typography.labelMedium,
+                color = Color.Gray
+            )
+
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // List of courts
+            venue.courts.forEach { court ->
+                CourtItem(
+                    court = court,
+                    onClick = { onBookClick(court) }
+                )
             }
         }
     }
 }
 
-// Update your Court data class to include courtNumber
-data class Court(
-    val name: String,
-    val address: String,
-    val courtNumber: String
-)
+@Composable
+fun CourtItem(court: Court, onClick: () -> Unit) {
+    val sportsText = court.sports.joinToString { it.sport.name }
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Cream),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = "Court ${court.courtNumber}",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = sportsText,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+
+            Button(
+                onClick = onClick,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = LightBlue,
+                    contentColor = Color.White
+                ),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text("Book")
+            }
+        }
+    }
+}

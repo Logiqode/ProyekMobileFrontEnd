@@ -16,14 +16,17 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import com.example.bookminton.ui.theme.*
 import androidx.compose.ui.Alignment
+import com.example.bookminton.data.Booking
 import com.example.bookminton.data.Transaction
 import com.example.bookminton.sampleData.SampleData
 import com.example.bookminton.data.DataSingleton
+import java.time.format.DateTimeFormatter
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TransactionsScreen(navController: NavHostController) {
     val transactions = remember { DataSingleton.transactions }
+    val bookings = remember { DataSingleton.bookings }
 
     Scaffold(
         topBar = {
@@ -69,7 +72,14 @@ fun TransactionsScreen(navController: NavHostController) {
                 contentPadding = PaddingValues(bottom = 16.dp)
             ) {
                 items(transactions) { transaction ->
-                    TransactionCard(transaction = transaction)
+                    // Find the corresponding booking
+                    val booking = bookings.firstOrNull { it.bookingId == transaction.bookingId }
+                    if (booking != null) {
+                        TransactionCard(
+                            transaction = transaction,
+                            booking = booking
+                        )
+                    }
                 }
             }
         }
@@ -77,7 +87,10 @@ fun TransactionsScreen(navController: NavHostController) {
 }
 
 @Composable
-fun TransactionCard(transaction: Transaction) {
+fun TransactionCard(
+    transaction: Transaction,
+    booking: Booking
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -99,10 +112,10 @@ fun TransactionCard(transaction: Transaction) {
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Transaction #${transaction.id.take(8)}",
+                    text = "Transaction #${transaction.transactionId.take(8)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = LightBlue // Consistent with home screen
+                    color = LightBlue
                 )
                 Text(
                     text = transaction.status,
@@ -114,7 +127,7 @@ fun TransactionCard(transaction: Transaction) {
 
             // Court information
             Text(
-                text = "${transaction.booking.courtName} - Court ${transaction.booking.courtNumber}",
+                text = "${booking.venueName} - Court ${booking.courtNumber}",
                 color = Color.Gray
             )
 
@@ -132,7 +145,7 @@ fun TransactionCard(transaction: Transaction) {
                         style = MaterialTheme.typography.labelSmall
                     )
                     Text(
-                        text = transaction.booking.date.toString(),
+                        text = booking.date.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")),
                         color = Color.Black
                     )
                 }
@@ -143,7 +156,8 @@ fun TransactionCard(transaction: Transaction) {
                         style = MaterialTheme.typography.labelSmall
                     )
                     Text(
-                        text = "${transaction.booking.startTime} - ${transaction.booking.endTime}",
+                        text = "${booking.startTime.format(DateTimeFormatter.ofPattern("hh:mm a"))} - " +
+                                "${booking.endTime.format(DateTimeFormatter.ofPattern("hh:mm a"))}",
                         color = Color.Black
                     )
                 }
@@ -151,7 +165,7 @@ fun TransactionCard(transaction: Transaction) {
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Order date and price
+            // Transaction details
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
@@ -163,7 +177,7 @@ fun TransactionCard(transaction: Transaction) {
                         style = MaterialTheme.typography.labelSmall
                     )
                     Text(
-                        text = transaction.booking.bookingDate.toString(),
+                        text = booking.bookingDate.format(DateTimeFormatter.ofPattern("MMM dd, yyyy")),
                         color = Color.Black
                     )
                 }
@@ -174,7 +188,7 @@ fun TransactionCard(transaction: Transaction) {
                         style = MaterialTheme.typography.labelSmall
                     )
                     Text(
-                        text = "$${transaction.booking.price}",
+                        text = "Rp ${transaction.amount.toInt()}",
                         color = LightBlue,
                         fontWeight = FontWeight.Bold
                     )
