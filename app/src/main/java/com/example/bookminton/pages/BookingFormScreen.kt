@@ -22,24 +22,17 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import java.time.LocalDate
 import java.time.LocalTime
 import com.example.bookminton.ui.theme.*
-import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import com.example.bookminton.data.Booking
-import com.example.bookminton.navigation.Screen
 import kotlinx.coroutines.delay
 import java.time.format.DateTimeFormatter
 import com.example.bookminton.data.DataSingleton
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.ui.text.input.ImeAction
 import java.time.temporal.ChronoUnit
-import com.example.bookminton.data.Sport
-import com.example.bookminton.data.Court
+import com.example.bookminton.helper.BookingFormHelper
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -61,19 +54,29 @@ fun BookingFormScreen(
     }
 
     // State variables
+    val context = LocalContext.current
+    var dateError by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
     var startTime by remember { mutableStateOf(LocalTime.MIN) }
     var endTime by remember { mutableStateOf(LocalTime.MIN) }
-    var selectedSport by remember { mutableStateOf<Sport?>(court.sports.firstOrNull()?.sport) }
+    var selectedSport by remember { mutableStateOf(court.sports.firstOrNull()?.sport) }
     val showToast = remember { mutableStateOf(false) }
     val toastMessage = remember { mutableStateOf("") }
     val isSuccess = remember { mutableStateOf(false) }
-    val context = LocalContext.current
+    var countdown by remember { mutableIntStateOf(0) }
     val focusManager = LocalFocusManager.current
-    var dateError by remember { mutableStateOf(false) }
 
-    // Time options based on venue hours
-    val timeOptions = remember(venue) {
+    // Derived values
+    val existingBookings = remember(selectedDate, courtId) {
+        derivedStateOf {
+            DataSingleton.bookings.filter {
+                it.courtId == courtId && it.date == selectedDate
+            }
+        }.value
+    }
+
+    // Time options
+    val allTimeOptions = remember(venue) {
         val startHour = venue.openHours.first.hour
         val endHour = venue.openHours.second.hour
         (startHour..endHour).map { hour -> LocalTime.of(hour, 0) }
@@ -81,17 +84,50 @@ fun BookingFormScreen(
 
     // Calculate price
     val price = remember(selectedSport, startTime, endTime) {
-        selectedSport?.let { sport ->
-            court.sports.firstOrNull { it.sport == sport }?.let { pricing ->
-                ChronoUnit.HOURS.between(startTime, endTime).toDouble() * pricing.pricePerHour
-            }
-        } ?: 0.0
+        BookingFormHelper.calculatePrice(
+            selectedSport,
+            court.sports,
+            startTime,
+            endTime
+        )
+    }
+
+    fun checkAvailability(start: LocalTime, end: LocalTime): Boolean {
+        // Basic validation
+        if (end <= start) return false
+        if (start < venue.openHours.first || end > venue.openHours.second) return false
+
+        // Same-day booking rules
+        if (BookingFormHelper.isSameDayBooking(selectedDate)) {
+            val earliestTime = BookingFormHelper.calculateEarliestAvailableTime()
+            if (start < earliestTime) return false
+        }
+
+        // Check against existing bookings
+        return existingBookings.none { booking ->
+            (start >= booking.startTime && start < booking.endTime) ||
+                    (end > booking.startTime && end <= booking.endTime) ||
+                    (start <= booking.startTime && end >= booking.endTime)
+        }
+    }
+
+    LaunchedEffect(selectedDate) {
+        startTime = LocalTime.MIN
+        endTime = LocalTime.MIN
     }
 
     // Toast handler
     if (showToast.value) {
-        LaunchedEffect(Unit) {
-            delay(3500)
+        LaunchedEffect(showToast.value) {
+            countdown = 3
+            while (countdown > 0) {
+                toastMessage.value = when {
+                    isSuccess.value -> "Booking Succesful! You will be redirected in $countdown..."
+                    else -> toastMessage.value
+                }
+                delay(1000)
+                countdown--
+            }
             showToast.value = false
             if (isSuccess.value) {
                 navController.popBackStack()
@@ -157,6 +193,7 @@ fun BookingFormScreen(
                     }
                     Spacer(modifier = Modifier.height(8.dp))
                 }
+
 
                 // Court Information Card
                 Card(
@@ -302,30 +339,45 @@ fun BookingFormScreen(
                         .padding(horizontal = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
+                    // Start Time Selection
                     TimeSelectionCard(
                         modifier = Modifier.weight(1f),
                         label = "Start Time",
                         selectedTime = startTime,
-                        timeOptions = timeOptions.filter {
-                            it.isBefore(venue.openHours.second)
+                        timeOptions = allTimeOptions,
+                        onTimeSelected = { selectedStart ->
+                            startTime = selectedStart
+                            endTime = allTimeOptions.firstOrNull { end ->
+                                end > selectedStart && checkAvailability(selectedStart, end)
+                            } ?: selectedStart.plusHours(1)
                         },
-                        onTimeSelected = {
-                            startTime = it
-                            if (endTime.isBefore(it) || endTime == it) {
-                                endTime = it.plusHours(1)
+                        isTimeAvailable = { potentialStart ->
+                            val earliestTime = if (BookingFormHelper.isSameDayBooking(selectedDate)) {
+                                BookingFormHelper.calculateEarliestAvailableTime()
+                            } else {
+                                venue.openHours.first
                             }
-                        }
+
+                            potentialStart >= earliestTime && allTimeOptions.any { end ->
+                                end > potentialStart && checkAvailability(potentialStart, end)
+                            }
+                        },
+                        isSameDayBooking = BookingFormHelper.isSameDayBooking(selectedDate),
+                        selectedDate = selectedDate
                     )
 
+                    // End Time Selection
                     TimeSelectionCard(
                         modifier = Modifier.weight(1f),
                         label = "End Time",
                         selectedTime = endTime,
-                        timeOptions = timeOptions.filter {
-                            // Must be after start time and within venue hours
-                            it.isAfter(startTime) && it <= venue.openHours.second
+                        timeOptions = allTimeOptions.filter { it > startTime },
+                        onTimeSelected = { selectedEnd ->
+                            endTime = selectedEnd
                         },
-                        onTimeSelected = { endTime = it }
+                        isTimeAvailable = { potentialEnd -> checkAvailability(startTime, potentialEnd) },
+                        isSameDayBooking = BookingFormHelper.isSameDayBooking(selectedDate),
+                        selectedDate = selectedDate
                     )
                 }
 
@@ -394,25 +446,69 @@ fun BookingFormScreen(
                 // Confirm Button
                 Button(
                     onClick = {
+                        // Validate all required fields
                         dateError = selectedDate == null
+                        val timeError = startTime == LocalTime.MIN || endTime == LocalTime.MIN
 
-                        if (!dateError && selectedSport != null) {
-                            DataSingleton.createBooking(
-                                venueId = venueId,
-                                courtId = courtId,
-                                sport = selectedSport!!,
-                                date = selectedDate!!,
-                                startTime = startTime,
-                                endTime = endTime
-                            )
-                            toastMessage.value = "Booking successful!"
-                            isSuccess.value = true
-                            showToast.value = true
-                        } else {
+                        if (dateError || timeError || selectedSport == null) {
                             toastMessage.value = "Please complete all fields"
                             isSuccess.value = false
                             showToast.value = true
+                            return@Button
                         }
+
+                        // Final availability check with all parameters
+                        if (!BookingFormHelper.isTimeRangeAvailable(
+                                start = startTime,
+                                end = endTime,
+                                courtStatus = court.status,
+                                venueHours = venue.openHours,
+                                existingBookings = existingBookings,
+                                selectedDate = selectedDate
+                            )) {
+                            toastMessage.value = "This time slot is no longer available. Please select another time."
+                            isSuccess.value = false
+                            showToast.value = true
+                            return@Button
+                        }
+
+                        // Check minimum booking duration (e.g., 1 hour)
+                        if (ChronoUnit.HOURS.between(startTime, endTime) < 1) {
+                            toastMessage.value = "Minimum booking duration is 1 hour"
+                            isSuccess.value = false
+                            showToast.value = true
+                            return@Button
+                        }
+
+                        if (BookingFormHelper.isSameDayBooking(selectedDate)) {
+                            val currentTime = LocalTime.now()
+                            val bufferTime = currentTime.plusHours(1)
+                            val nextFullHour = if (bufferTime.minute > 0) {
+                                bufferTime.withMinute(0).plusHours(1)
+                            } else {
+                                bufferTime.withMinute(0)
+                            }
+
+                            if (startTime < nextFullHour) {
+                                toastMessage.value = "Same-day bookings must be at least one hour ahead. Earliest available: $nextFullHour"
+                                isSuccess.value = false
+                                showToast.value = true
+                                return@Button
+                            }
+                        }
+
+                        // All checks passed - create booking
+                        DataSingleton.createBooking(
+                            venueId = venueId,
+                            courtId = courtId,
+                            sport = selectedSport!!,
+                            date = selectedDate!!,
+                            startTime = startTime,
+                            endTime = endTime
+                        )
+
+                        isSuccess.value = true
+                        showToast.value = true
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -423,11 +519,13 @@ fun BookingFormScreen(
                         contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(12.dp),
-                    enabled = selectedDate != null && startTime != LocalTime.MIN && endTime != LocalTime.MIN
+                    enabled = selectedDate != null &&
+                            startTime != LocalTime.MIN &&
+                            endTime != LocalTime.MIN &&
+                            selectedSport != null
                 ) {
                     Text("Confirm Booking", fontSize = 18.sp)
                 }
-
                 Spacer(modifier = Modifier.height(24.dp))
             }
         }
@@ -435,12 +533,15 @@ fun BookingFormScreen(
 }
 
 @Composable
-private fun TimeSelectionCard(
+fun TimeSelectionCard(
     modifier: Modifier = Modifier,
     label: String,
     selectedTime: LocalTime,
     timeOptions: List<LocalTime>,
-    onTimeSelected: (LocalTime) -> Unit
+    onTimeSelected: (LocalTime) -> Unit,
+    isTimeAvailable: (LocalTime) -> Boolean,
+    isSameDayBooking: Boolean,
+    selectedDate: LocalDate?
 ) {
     var expanded by remember { mutableStateOf(false) }
 
@@ -488,14 +589,34 @@ private fun TimeSelectionCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     timeOptions.forEach { time ->
+                        val available = isTimeAvailable(time)
+                        val tooEarly = isSameDayBooking &&
+                                time < BookingFormHelper.calculateEarliestAvailableTime()
+
                         DropdownMenuItem(
                             text = {
-                                Text(time.format(DateTimeFormatter.ofPattern("HH:mm")))
+                                Text(
+                                    time.format(DateTimeFormatter.ofPattern("HH:mm")) +
+                                            when {
+                                                isSameDayBooking && time < BookingFormHelper.calculateEarliestAvailableTime() ->
+                                                    " (Unavailable)"
+                                                !isTimeAvailable(time) -> " (Unavailable)"
+                                                else -> ""
+                                            },
+                                    color = when {
+                                        isSameDayBooking && time < BookingFormHelper.calculateEarliestAvailableTime() -> Color.Gray
+                                        !isTimeAvailable(time) -> Color.Gray
+                                        else -> Color.Black
+                                    }
+                                )
                             },
                             onClick = {
-                                onTimeSelected(time)
-                                expanded = false
-                            }
+                                if (available && !tooEarly) {
+                                    onTimeSelected(time)
+                                    expanded = false
+                                }
+                            },
+                            enabled = available && !tooEarly
                         )
                     }
                 }
