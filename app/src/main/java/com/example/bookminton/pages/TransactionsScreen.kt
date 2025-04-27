@@ -1,6 +1,5 @@
 package com.example.bookminton.pages
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,7 +17,6 @@ import com.example.bookminton.ui.theme.*
 import androidx.compose.ui.Alignment
 import com.example.bookminton.data.Booking
 import com.example.bookminton.data.Transaction
-import com.example.bookminton.sampleData.SampleData
 import com.example.bookminton.data.DataSingleton
 import java.time.format.DateTimeFormatter
 
@@ -48,7 +46,7 @@ fun TransactionsScreen(navController: NavHostController) {
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = LightBlue
+                    containerColor = TealBlack
                 )
             )
         }
@@ -115,7 +113,7 @@ fun TransactionCard(
                     text = "Transaction #${transaction.transactionId.take(8)}",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = LightBlue
+                    color = TealBlack
                 )
                 Text(
                     text = transaction.status,
@@ -189,7 +187,7 @@ fun TransactionCard(
                     )
                     Text(
                         text = "Rp ${transaction.amount.toInt()}",
-                        color = LightBlue,
+                        color = TealBlack,
                         fontWeight = FontWeight.Bold
                     )
                 }

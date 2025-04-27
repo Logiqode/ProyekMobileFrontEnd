@@ -155,7 +155,7 @@ fun BookingFormScreen(
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = LightBlue
+                    containerColor = TealBlack
                 )
             )
         }
@@ -163,11 +163,12 @@ fun BookingFormScreen(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(top = padding.calculateTopPadding())
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
                 ) { focusManager.clearFocus() }
-                .background(SoftTeal)
+                .background(Aquamarine)
         ) {
             Column(
                 modifier = Modifier
@@ -212,7 +213,7 @@ fun BookingFormScreen(
                             text = venue.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = LightBlue
+                            color = TealBlack
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
@@ -263,8 +264,8 @@ fun BookingFormScreen(
                                             )
                                         },
                                         colors = FilterChipDefaults.filterChipColors(
-                                            selectedContainerColor = LightBlue.copy(alpha = 0.2f),
-                                            selectedLabelColor = LightBlue
+                                            selectedContainerColor = TealBlack.copy(alpha = 0.2f),
+                                            selectedLabelColor = TealBlack
                                         )
                                     )
                                 }
@@ -325,7 +326,7 @@ fun BookingFormScreen(
                                 }
                             }
                         ) {
-                            Text("Select", color = LightBlue)
+                            Text("Select", color = TealBlack)
                         }
                     }
                 }
@@ -388,7 +389,7 @@ fun BookingFormScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Cream),
+                    colors = CardDefaults.cardColors(containerColor = WhiteTan),
                     elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
                     shape = RoundedCornerShape(16.dp)
                 ) {
@@ -435,7 +436,7 @@ fun BookingFormScreen(
                                 text = "Rp ${price.toInt()}",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = LightBlue
+                                color = TealBlack
                             )
                         }
                     }
@@ -515,7 +516,7 @@ fun BookingFormScreen(
                         .height(56.dp)
                         .padding(horizontal = 16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = LightBlue,
+                        containerColor = TealBlack,
                         contentColor = Color.White
                     ),
                     shape = RoundedCornerShape(12.dp),

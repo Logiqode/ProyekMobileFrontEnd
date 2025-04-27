@@ -28,11 +28,17 @@ import com.example.bookminton.navigation.Screen
 import com.example.bookminton.ui.theme.*
 import com.example.bookminton.data.Court
 import com.example.bookminton.data.Venue
+import com.example.bookminton.data.*
 import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.material3.TextFieldDefaults
+import androidx.compose.ui.text.style.TextOverflow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -69,7 +75,7 @@ fun BookingScreen(navController: NavHostController) {
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = LightBlue
+                    containerColor = TealBlack
                 )
             )
         }
@@ -77,7 +83,7 @@ fun BookingScreen(navController: NavHostController) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(SoftTeal)
+                .background(Aquamarine)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
                     indication = null
@@ -179,7 +185,7 @@ fun VenueCard(venue: Venue, onBookClick: (Court) -> Unit) {
                 text = venue.name,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = LightBlue
+                color = TealBlack
             )
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -187,8 +193,73 @@ fun VenueCard(venue: Venue, onBookClick: (Court) -> Unit) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = Color.Gray
             )
+            Spacer(modifier = Modifier.height(8.dp))
 
-            Spacer(modifier = Modifier.height(16.dp))
+            // Opening Hours
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.DateRange,
+                    contentDescription = "Opening hours",
+                    tint = Color.Gray,
+                    modifier = Modifier.size(16.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+
+                Text(
+                    text = "Open ${venue.openHours.first} - ${venue.openHours.second}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+
+            // Sports offered (extracted from all courts)
+            val allSports = venue.courts
+                .flatMap { court -> court.sports.map { it.sport.name } }
+                .distinct()
+
+            if (allSports.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.MoreVert,
+                        contentDescription = "Sports",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = allSports.joinToString(),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            // Facilities (limited to 3 items, max 24 chars)
+            val facilitiesText = venue.facilities
+                .take(3)
+                .joinToString()
+                .take(24)
+
+            if (facilitiesText.isNotEmpty()) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        imageVector = Icons.Default.Favorite,
+                        contentDescription = "Facilities",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(16.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text(
+                        text = facilitiesText,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color.Gray,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
 
             // Available Courts
             Text(
@@ -196,7 +267,6 @@ fun VenueCard(venue: Venue, onBookClick: (Court) -> Unit) {
                 style = MaterialTheme.typography.labelMedium,
                 color = Color.Gray
             )
-
             Spacer(modifier = Modifier.height(8.dp))
 
             // List of courts
@@ -218,7 +288,7 @@ fun CourtItem(court: Court, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Cream),
+        colors = CardDefaults.cardColors(containerColor = WhiteTan),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -245,7 +315,7 @@ fun CourtItem(court: Court, onClick: () -> Unit) {
             Button(
                 onClick = onClick,
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = LightBlue,
+                    containerColor = TealBlack,
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(8.dp)

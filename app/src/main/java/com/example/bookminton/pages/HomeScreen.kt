@@ -25,7 +25,6 @@ import com.example.bookminton.data.Booking
 import com.example.bookminton.data.BookingStatus
 import com.example.bookminton.data.DataSingleton
 import com.example.bookminton.navigation.Screen
-import com.example.bookminton.sampleData.SampleData
 import java.time.format.DateTimeFormatter
 
 @Composable
@@ -35,7 +34,7 @@ fun HomeScreen(navController: NavHostController) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(SkyBlue)
+            .background(Teal)
     ) {
         Box(
             modifier = Modifier
@@ -43,7 +42,7 @@ fun HomeScreen(navController: NavHostController) {
                 .weight(1f / 4f)
                 .background(
                     brush = Brush.verticalGradient(
-                        colors = listOf(LightBlue, SkyBlue)
+                        colors = listOf(TealBlack, Teal)
                     )
                 )
                 .padding(24.dp)
@@ -77,7 +76,7 @@ fun HomeScreen(navController: NavHostController) {
                 .fillMaxWidth()
                 .weight(3f / 4f)
                 .clip(RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp))
-                .background(SoftTeal)
+                .background(Aquamarine)
                 .padding(24.dp)
         ) {
             if (bookings.isEmpty()) {
@@ -120,7 +119,7 @@ fun HomeScreen(navController: NavHostController) {
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = LightBlue,
+                    containerColor = TealBlack,
                     contentColor = Color.White
                 ),
                 shape = RoundedCornerShape(12.dp)
