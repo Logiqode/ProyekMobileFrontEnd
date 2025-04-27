@@ -17,3 +17,4 @@ val Cream = Color(0xFFFFF1D5)
 
 val statusGreen = Color(0xFF008000)
 val statusRed = Color(0xFF800517)
+val statusYellow = Color(0xFFFFDE21)
