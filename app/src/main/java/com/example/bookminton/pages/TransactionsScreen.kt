@@ -1,5 +1,7 @@
 package com.example.bookminton.pages
 
+import android.R
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -51,32 +53,39 @@ fun TransactionsScreen(navController: NavHostController) {
             )
         }
     ) { padding ->
-        if (transactions.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("No transactions found")
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(padding)
-                    .padding(horizontal = 16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                contentPadding = PaddingValues(bottom = 16.dp)
-            ) {
-                items(transactions) { transaction ->
-                    // Find the corresponding booking
-                    val booking = bookings.firstOrNull { it.bookingId == transaction.bookingId }
-                    if (booking != null) {
-                        TransactionCard(
-                            transaction = transaction,
-                            booking = booking
-                        )
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Aquamarine)
+                .padding(top = 8.dp, bottom = 8.dp)
+        ) {
+            if (transactions.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("No transactions found")
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(padding)
+                        .padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp),
+                    contentPadding = PaddingValues(bottom = 16.dp),
+                ) {
+                    items(transactions) { transaction ->
+                        // Find the corresponding booking
+                        val booking = bookings.firstOrNull { it.bookingId == transaction.bookingId }
+                        if (booking != null) {
+                            TransactionCard(
+                                transaction = transaction,
+                                booking = booking
+                            )
+                        }
                     }
                 }
             }
