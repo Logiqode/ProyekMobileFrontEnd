@@ -1,6 +1,7 @@
 package com.example.bookminton.pages
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -25,11 +26,34 @@ import com.example.bookminton.data.Booking
 import com.example.bookminton.data.BookingStatus
 import com.example.bookminton.data.DataSingleton
 import com.example.bookminton.navigation.Screen
+import kotlinx.coroutines.delay
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun HomeScreen(navController: NavHostController) {
-    val bookings by remember { mutableStateOf(DataSingleton.bookings) }
+    val currentTime by produceState(initialValue = LocalDateTime.now()) {
+        while (true) {
+            delay(10_000) // Update every 10 seconds
+            value = LocalDateTime.now()
+        }
+    }
+
+    // Filter and sort bookings - now recomputes when currentTime changes
+    val bookings by remember(currentTime) {
+        mutableStateOf(
+            DataSingleton.bookings
+                .filter { booking ->
+                    val bookingEnd = LocalDateTime.of(booking.date, booking.endTime)
+                    bookingEnd.isAfter(currentTime) ||
+                            (LocalDateTime.of(booking.date, booking.startTime).isBefore(currentTime) &&
+                                    bookingEnd.isAfter(currentTime))
+                }
+                .sortedBy { booking ->
+                    LocalDateTime.of(booking.date, booking.startTime)
+                }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -92,23 +116,30 @@ fun HomeScreen(navController: NavHostController) {
                     )
                 }
             } else {
-                Text(
-                    text = "Your Upcoming Bookings",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = Color.Black
-                    ),
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
+                    Text(
+                        text = "Your Upcoming Bookings",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black
+                        ),
+                        modifier = Modifier.padding(bottom = 16.dp)
+                    )
 
-                LazyColumn(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    items(bookings.take(3)) { booking ->
-                        BookingCard(booking = booking)
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        items(bookings.take(3)) { booking ->
+                            val isActive = LocalDateTime.of(booking.date, booking.startTime).isBefore(currentTime) &&
+                                    LocalDateTime.of(booking.date, booking.endTime).isAfter(currentTime)
+
+                            BookingCard(
+                                booking = booking,
+                                isActive = isActive,
+                                onCardClick = { /* Handle click */ }
+                            )
+                        }
                     }
-                }
             }
 
             // This ensures the button stays at the bottom
@@ -136,14 +167,22 @@ fun HomeScreen(navController: NavHostController) {
 @Composable
 fun BookingCard(
     booking: Booking,
-    onCardClick: (() -> Unit)? = null // Optional click handler
+    isActive: Boolean = false,
+    onCardClick: (() -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = onCardClick != null) { onCardClick?.invoke()},
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceContainer
+            .clickable(enabled = onCardClick != null) { onCardClick?.invoke() }
+            .border(width = if (isActive) 2.dp else 0.dp,
+                color = if (isActive) Amber else Color.Transparent,
+                shape = RoundedCornerShape(16.dp)),
+                colors = CardDefaults.cardColors(
+                containerColor = if (isActive) {
+                    MaterialTheme.colorScheme.surfaceContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainer
+            }
         ),
         elevation = CardDefaults.cardElevation(
             defaultElevation = 4.dp
@@ -159,34 +198,52 @@ fun BookingCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = "${booking.venueName} - ${booking.courtNumber}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
+                // Venue and Court Info
+                Column(
                     modifier = Modifier.weight(1f)
-                )
+                ) {
+                    Text(
+                        text = booking.venueName,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = if (isActive) Amber else MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Court ${booking.courtNumber}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        color = if (isActive) Amber.copy(alpha = 0.8f)
+                        else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                    )
+                }
 
-                // Status Badge
+                // Status Badge (keep your existing badge code)
                 Box(
                     contentAlignment = Alignment.Center,
                     modifier = Modifier
                         .clip(RoundedCornerShape(8.dp))
                         .background(
-                            when (booking.status) {
-                                BookingStatus.UPCOMING -> Color(0xFF2196F3).copy(alpha = 0.2f)
-                                BookingStatus.COMPLETED -> Color(0xFF4CAF50).copy(alpha = 0.2f)
+                            when {
+                                isActive -> Amber.copy(alpha = 0.3f)
+                                booking.status == BookingStatus.UPCOMING -> Color(0xFF2196F3).copy(alpha = 0.2f)
+                                else -> Color(0xFF4CAF50).copy(alpha = 0.2f)
                             }
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp)
                 ) {
                     Text(
-                        text = booking.status.name.lowercase().replaceFirstChar { it.titlecase() },
+                        text = when {
+                            isActive -> "Active Now"
+                            else -> booking.status.name.lowercase().replaceFirstChar { it.titlecase() }
+                        },
                         style = MaterialTheme.typography.labelSmall,
-                        color = when (booking.status) {
-                            BookingStatus.UPCOMING -> Color(0xFF2196F3)
-                            BookingStatus.COMPLETED -> Color(0xFF4CAF50)
+                        color = when {
+                            isActive -> Amber
+                            booking.status == BookingStatus.UPCOMING -> Color(0xFF2196F3)
+                            else -> Color(0xFF4CAF50)
                         }
                     )
                 }
@@ -207,7 +264,8 @@ fun BookingCard(
                     )
                     Text(
                         text = booking.date.format(DateTimeFormatter.ofPattern("dd MMMM yyyy")),
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isActive) Amber else MaterialTheme.colorScheme.onSurface
                     )
                 }
 
@@ -220,7 +278,8 @@ fun BookingCard(
                     Text(
                         text = "${booking.startTime.format(DateTimeFormatter.ofPattern("hh:mm a"))} - " +
                                 "${booking.endTime.format(DateTimeFormatter.ofPattern("hh:mm a"))}",
-                        style = MaterialTheme.typography.bodyMedium
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isActive) Amber else MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
